@@ -1,14 +1,14 @@
-import { Router } from "express";
-import validate from "../middlewares/validate.middleware.js";
-import { patientSchema } from "../validators/patient.validator.js";
-import { addPatient, getAnonymized } from "../controllers/patient.controller.js";
-
-const router = Router();
+// src/routes/patients.routes.js
+const express = require('express');
+const router = express.Router();
+const validate = require('../middlewares/validate.middleware');
+const { patientSchema } = require('../validators/patient.validator');
+const controller = require('../controllers/patient.controller');
 
 // POST /api/patients
-router.post("/", validate(patientSchema), addPatient);
+router.post('/', validate(patientSchema), controller.addPatient);
 
 // GET /api/patients/anonymized?k=3
-router.get("/anonymized", getAnonymized);
+router.get('/anonymized', controller.getAnonymized);
 
-export default router;
+module.exports = router;

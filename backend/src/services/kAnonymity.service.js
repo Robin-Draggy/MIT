@@ -1,14 +1,14 @@
-import { generalizeAge, generalizeZip, ageLadder, zipLadder } from "../utils/generalizers.js";
+// src/services/kAnonymity.service.js
+const { generalizeAge, generalizeZip, ageLadder, zipLadder } = require('../utils/generalizers');
 
 /**
- * Anonymize records using iterative generalization hierarchy.
- * - records: array of { id, age, zip, diagnosis }
+ * anonymizeK(records, opts)
+ * - records: array of { _id or id, age, zip, diagnosis }
  * - opts: { k, requireLDiversity, l }
  *
  * Returns: { anonymized: [], suppressed: [], levels: { age, zip } }
  */
-
-export function anonymizeK(records, opts = {}) {
+function anonymizeK(records, opts = {}) {
   const k = opts.k || 3;
   const requireLDiversity = !!opts.requireLDiversity;
   const l = opts.l || 2;
@@ -24,10 +24,12 @@ export function anonymizeK(records, opts = {}) {
 
   function project(rec) {
     return {
-      id: rec.id,
+      id: rec._id || rec.id,
+      ageRaw: rec.age,
       age: generalizeAge(rec.age, ageLevel),
+      zipRaw: rec.zip,
       zip: generalizeZip(rec.zip, zipLevel),
-      diagnosis: rec.diagnosis,
+      diagnosis: rec.diagnosis
     };
   }
 
@@ -45,12 +47,9 @@ export function anonymizeK(records, opts = {}) {
     const g = groupRows(rows);
     const violateKeys = [];
     for (const [key, arr] of g.entries()) {
-      if (arr.length < k) {
-        violateKeys.push(key);
-        continue;
-      }
+      if (arr.length < k) { violateKeys.push(key); continue; }
       if (requireLDiversity) {
-        const distinct = new Set(arr.map((x) => x.diagnosis)).size;
+        const distinct = new Set(arr.map(x => x.diagnosis)).size;
         if (distinct < l) violateKeys.push(key);
       }
     }
@@ -63,9 +62,14 @@ export function anonymizeK(records, opts = {}) {
     const { violateKeys } = violates(current);
     if (violateKeys.length === 0) break;
 
-    // Heuristic: try increasing the QI with more distinct values first
+    // Heuristic: increment QI with more distinct raw values first
+    // compute distinct counts per QI
+    const distinctAges = new Set(records.map(r => r.age)).size;
+    const distinctZips = new Set(records.map(r => r.zip)).size;
+
     let progressed = false;
-    if (ageLevel < maxAge) {
+
+    if ((distinctAges >= distinctZips && ageLevel < maxAge) || zipLevel >= maxZip) {
       ageLevel += 1;
       progressed = true;
     } else if (zipLevel < maxZip) {
@@ -74,19 +78,33 @@ export function anonymizeK(records, opts = {}) {
     }
 
     current = records.map(project);
+
     if (!progressed) break; // cannot generalize further
   }
 
-  // Final suppression for remaining violating groups
+  // final suppression for remaining violating groups
   const { violateKeys, groups } = violates(current);
   const suppressed = [];
   const anonymized = [];
   const suppressSet = new Set(violateKeys);
-
   for (const [key, arr] of groups.entries()) {
     if (suppressSet.has(key)) suppressed.push(...arr);
     else anonymized.push(...arr);
   }
 
-  return { anonymized, suppressed, levels: { age: ageLevel, zip: zipLevel } };
+  // Return anonymized and suppressed items (without raw internal fields)
+  const mapOut = (r) => ({
+    id: r.id,
+    age: r.age,
+    zip: r.zip,
+    diagnosis: r.diagnosis
+  });
+
+  return {
+    anonymized: anonymized.map(mapOut),
+    suppressed: suppressed.map(mapOut),
+    levels: { age: ageLevel, zip: zipLevel }
+  };
 }
+
+module.exports = { anonymizeK };
