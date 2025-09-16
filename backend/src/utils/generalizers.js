@@ -1,6 +1,4 @@
-// src/utils/generalization.js
-
-const ageLadder = [
+export const ageLadder = [
   (age) => {
     if (age <= 9) return "[0-9]";
     if (age <= 19) return "[10-19]";
@@ -27,21 +25,19 @@ const ageLadder = [
   (_age) => "*",
 ];
 
-const zipLadder = [
+export const zipLadder = [
   (zip) => (zip || "").toString().slice(0, 5).padEnd(5, "*"),
   (zip) => (zip || "").toString().slice(0, 3).padEnd(5, "*"),
   (zip) => (zip || "").toString().slice(0, 2).padEnd(5, "*"),
   (_zip) => "*",
 ];
 
-function generalizeAge(age, level) {
+export const generalizeAge = (age, level) => {
   const l = Math.min(Math.max(0, level), ageLadder.length - 1);
   return ageLadder[l](age);
 }
 
-function generalizeZip(zip, level) {
+export const generalizeZip = (zip, level) => {
   const l = Math.min(Math.max(0, level), zipLadder.length - 1);
   return zipLadder[l](zip);
 }
-
-export { ageLadder, zipLadder, generalizeAge, generalizeZip };

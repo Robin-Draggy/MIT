@@ -1,4 +1,3 @@
-// src/config/index.js
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -10,7 +9,7 @@ const config = {
     user: process.env.DB_USER || "root",
     password: process.env.DB_PASS || "",
     database: process.env.DB_NAME || "health_data",
-  },
+  }, 
   security: {
     corsOrigins: (process.env.CORS_ORIGINS || "")
       .split(",")
