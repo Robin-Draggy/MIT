@@ -1,4 +1,3 @@
-// src/validators/patient.validator.js
 const { z } = require('zod');
 
 const patientSchema = z.object({
