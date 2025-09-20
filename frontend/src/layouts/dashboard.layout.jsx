@@ -12,7 +12,7 @@ export const DashboardLayout = () => {
 
   return (
     <Fragment>
-      <div className='w-full min-h-screen p-4 space-y-4'>
+      <div className='w-full overflow-hidden min-h-screen p-4 space-y-4'>
         <div className='w-full'>
           <Navbar />
         </div>

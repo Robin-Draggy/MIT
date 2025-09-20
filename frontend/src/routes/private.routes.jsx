@@ -5,6 +5,7 @@ import { ConfigureAnnonymization } from "../pages/configure-annonymization";
 import { Dashboard } from "../pages/dashboard";
 import { Login } from "../pages/Login/Login";
 import { Logout } from "../pages/logout/Logout";
+import { Patients } from "../pages/patients";
 
 export const privateRoutes = [
     {
@@ -37,6 +38,15 @@ export const privateRoutes = [
           {
             path: "annonymization-results",
             element: <AnnonymizationResults />
+          }
+        ]
+      },
+      {
+        path: "/",
+        children: [
+          {
+            path: "patients",
+            element: <Patients />
           }
         ]
       },

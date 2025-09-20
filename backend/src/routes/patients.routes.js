@@ -5,10 +5,26 @@ const validate = require('../middlewares/validate.middleware');
 const { patientSchema } = require('../validators/patient.validator');
 const controller = require('../controllers/patient.controller');
 
-// POST /api/patients
+// 📌 Create patient
 router.post('/', validate(patientSchema), controller.addPatient);
 
-// GET /api/patients/anonymized?k=3
+// 📌 Get anonymized patients
 router.get('/anonymized', controller.getAnonymized);
+
+// 📌 Get all patients
+router.get('/', async (req, res, next) => {
+  try {
+    const patients = await require('../models/patient.model').find().lean();
+    res.json(patients);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// 📌 Update patient
+router.put('/:id', validate(patientSchema), controller.updatePatient);
+
+// 📌 Delete patient
+router.delete('/:id', controller.deletePatient);
 
 module.exports = router;
