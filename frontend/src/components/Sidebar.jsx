@@ -17,6 +17,11 @@ export const Sidebar = ({ collapsed, toggleSidebar }) => {
       icon: <GrDocumentConfig />,
     },
     {
+      name: 'annonymization results',
+      path: '/annonymization-results',
+      icon: <GrDocumentConfig />,
+    },
+    {
       name: 'patients',
       path: '/patients',
       icon: <MdPeopleAlt />,

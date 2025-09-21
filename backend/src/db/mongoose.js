@@ -7,12 +7,12 @@ async function connect() {
   const uri = config.db.uri;
   try {
     await mongoose.connect(uri, {
-      // useNewUrlParser/useUnifiedTopology not required in mongoose v6+
-      autoIndex: true
+      autoIndex: true, // build indexes automatically
+      serverSelectionTimeoutMS: 5000, // fail fast if cluster not reachable
     });
-    logger.info('Connected to MongoDB');
+    logger.info(`✅ Connected to MongoDB at ${uri}`);
   } catch (err) {
-    logger.error('MongoDB connection error:', err);
+    logger.error('❌ MongoDB connection error:', err.message);
     throw err;
   }
 }

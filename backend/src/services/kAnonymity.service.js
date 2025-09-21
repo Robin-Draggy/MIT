@@ -3,35 +3,46 @@ const { generalizeAge, ageLadder } = require('../utils/generalizers');
 
 /**
  * anonymizeK(records, opts)
- * - records: array of patient objects
- * - opts: { k, requireLDiversity, l }
+ * - records: array of patient objects (raw rows)
+ * - opts: { k, selectedQIs: ['age','sex',...], requireLDiversity, l }
  *
- * Returns: { anonymized: [], suppressed: [], levels: { age } }
+ * Returns: { anonymized: [], suppressed: [], levels: { age }, metrics: { total, released, suppressed, suppressionRate } }
  */
-function anonymizeK(records, opts = {}) {
-  const k = opts.k || 3;
-  const requireLDiversity = !!opts.requireLDiversity;
-  const l = opts.l || 2;
+function anonymizeK(records = [], opts = {}) {
+  const k = Number(opts.k) || 3;
+  const selectedQIs = Array.isArray(opts.selectedQIs) && opts.selectedQIs.length > 0
+    ? opts.selectedQIs
+    : ['age', 'sex', 'procedure_category', 'ward'];
+
+  let requireLDiversity = !!opts.requireLDiversity;
+  const l = Number(opts.l) || 2;
 
   if (!Array.isArray(records) || records.length === 0) {
-    return { anonymized: [], suppressed: [], levels: { age: 0 } };
+    return { anonymized: [], suppressed: [], levels: { age: 0 }, metrics: { total: 0, released: 0, suppressed: 0, suppressionRate: 0 } };
+  }
+
+  // If l-diversity requested but 'outcome' not present in records, disable it
+  if (requireLDiversity && records.every(r => r.outcome === undefined)) {
+    requireLDiversity = false;
   }
 
   let ageLevel = 0;
   const maxAge = ageLadder.length - 1;
 
+  // project record according to current generalization levels
   function project(rec) {
-    return {
-      id: rec._id || rec.id,
-      ageRaw: rec.age,
-      age: generalizeAge(rec.age, ageLevel),
-      sex: rec.sex,
-      ward: rec.ward,
+    const out = {
+      id: rec.patient_id || rec.id || rec._id || null,
+      // keep raw dates and patient_id for output
       patient_id: rec.patient_id,
       admission_date: rec.admission_date,
       discharge_date: rec.discharge_date,
       length_of_stay_days: rec.length_of_stay_days,
-      procedure_category: rec.procedure_category,
+      ageRaw: rec.age,
+      age: generalizeAge(rec.age, ageLevel),
+      sex: rec.sex || "Unknown",
+      procedure_category: rec.procedure_category || "Unknown",
+      ward: rec.ward || "Unknown",
       severity_score_1_10: rec.severity_score_1_10,
       comorbidity_count: rec.comorbidity_count,
       complications_flag: rec.complications_flag,
@@ -41,14 +52,22 @@ function anonymizeK(records, opts = {}) {
       outcome: rec.outcome,
       discharge_disposition: rec.discharge_disposition,
       readmission_30d: rec.readmission_30d,
-      mortality_flag: rec.mortality_flag
+      mortality_flag: rec.mortality_flag,
     };
+
+    // Build key parts for selected QIs (use projected age for 'age' QI)
+    out._keyParts = selectedQIs.map(q => {
+      if (q === 'age') return out.age;
+      return (out[q] !== undefined ? String(out[q]) : "Unknown");
+    });
+
+    return out;
   }
 
   function groupRows(rows) {
     const map = new Map();
     for (const r of rows) {
-      const key = `${r.age}__${r.sex}__${r.ward}`;
+      const key = r._keyParts.join('__');
       if (!map.has(key)) map.set(key, []);
       map.get(key).push(r);
     }
@@ -64,20 +83,18 @@ function anonymizeK(records, opts = {}) {
         continue;
       }
       if (requireLDiversity) {
-        const distinctOutcomes = new Set(arr.map(x => x.outcome)).size;
-        if (distinctOutcomes < l) violateKeys.push(key);
+        const distinct = new Set(arr.map(x => x.outcome)).size;
+        if (distinct < l) violateKeys.push(key);
       }
     }
     return { violateKeys, groups: g };
   }
 
   let current = records.map(project);
-
-  // Keep generalizing age until constraints are satisfied or max level reached
+  // iterative generalization only on age (you can extend to other QIs later)
   while (true) {
     const { violateKeys } = violates(current);
     if (violateKeys.length === 0) break;
-
     if (ageLevel < maxAge) {
       ageLevel += 1;
       current = records.map(project);
@@ -86,6 +103,7 @@ function anonymizeK(records, opts = {}) {
     }
   }
 
+  // final grouping and split anonymized/suppressed
   const { violateKeys, groups } = violates(current);
   const suppressed = [];
   const anonymized = [];
@@ -95,29 +113,59 @@ function anonymizeK(records, opts = {}) {
     else anonymized.push(...arr);
   }
 
-  // --- Fallback: if everything is suppressed, release fully generalized dataset ---
+  // If everything suppressed, fallback: return fully generalized rows (no suppression)
   if (anonymized.length === 0 && suppressed.length > 0) {
-    const generalized = suppressed.map(r => ({
+    const fallback = suppressed.map(r => ({
       id: r.id,
-      age: "[Any Age]",
-      sex: "Any",
-      ward: "Any",
       patient_id: r.patient_id,
       admission_date: r.admission_date,
       discharge_date: r.discharge_date,
-      outcome: "Any"
+      length_of_stay_days: r.length_of_stay_days,
+      age: "[Any Age]",
+      sex: "Any",
+      procedure_category: "Any",
+      ward: "Any",
+      outcome: "Any",
     }));
-    return {
-      anonymized: generalized,
-      suppressed: [],
-      levels: { age: maxAge }
+    const metrics = {
+      total: records.length,
+      released: fallback.length,
+      suppressed: 0,
+      suppressionRate: 0,
+      info: "fallback - fully generalized to avoid empty output"
     };
+    return { anonymized: fallback, suppressed: [], levels: { age: maxAge }, metrics };
   }
 
+  // Map anonymized/suppressed to output-friendly shape (hide raw internals)
+  const mapOut = (r) => ({
+    id: r.id,
+    patient_id: r.patient_id,
+    admission_date: r.admission_date,
+    discharge_date: r.discharge_date,
+    length_of_stay_days: r.length_of_stay_days,
+    age: r.age,
+    sex: r.sex,
+    procedure_category: r.procedure_category,
+    ward: r.ward,
+    outcome: r.outcome,
+  });
+
+  const outAnonymized = anonymized.map(mapOut);
+  const outSuppressed = suppressed.map(mapOut);
+
+  const metrics = {
+    total: records.length,
+    released: outAnonymized.length,
+    suppressed: outSuppressed.length,
+    suppressionRate: outSuppressed.length / records.length
+  };
+
   return {
-    anonymized,
-    suppressed,
-    levels: { age: ageLevel }
+    anonymized: outAnonymized,
+    suppressed: outSuppressed,
+    levels: { age: ageLevel },
+    metrics
   };
 }
 
