@@ -1,11 +1,11 @@
 // src/components/anonymization/ConfigureTab.jsx
-import { useState, useEffect } from "react";
-import axios from "axios";
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 export const ConfigureTab = ({
   datasetId,
   columns = [],
-  goToResults, // optional function to switch to Results tab
+  goToResults,
 }) => {
   const [kValue, setKValue] = useState(3);
   const [selectedQIs, setSelectedQIs] = useState([]);
@@ -20,9 +20,9 @@ export const ConfigureTab = ({
   }, [columns]);
 
   const handleRunAnonymization = async () => {
-    if (!datasetId) return alert("No dataset selected!");
+    if (!datasetId) return alert('No dataset selected!');
     if (selectedQIs.length === 0)
-      return alert("Please select at least one quasi-identifier!");
+      return alert('Please select at least one quasi-identifier!');
 
     try {
       setLoading(true);
@@ -37,41 +37,55 @@ export const ConfigureTab = ({
       );
 
       setMetrics(res.data.counts);
-      alert("Anonymization complete! Check Results tab.");
+      alert('Anonymization complete! Check Results tab.');
 
-      if (goToResults) goToResults(); // optionally switch to Results tab
+      if (goToResults) goToResults();
     } catch (err) {
       console.error(err);
-      alert("Failed to run anonymization.");
+      alert('Failed to run anonymization.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow flex flex-col space-y-4 max-w-3xl mx-auto">
-      <h2 className="text-xl font-semibold">Configure Anonymization</h2>
+    <div className='p-6 bg-white rounded-lg shadow-lg flex flex-col space-y-6 max-w-3xl mx-auto'>
+      <h2 className='text-2xl font-semibold text-gray-800'>
+        Configure Anonymization
+      </h2>
 
-      {/* K-value */}
-      <div>
-        <label className="block font-medium mb-1">k-value</label>
+      {/* K-value Slider */}
+      <div className='space-y-2'>
+        <label className='block font-medium text-gray-700'>
+          k-value: <span className='font-bold'>{kValue}</span>
+        </label>
         <input
-          type="number"
+          type='range'
           min={2}
+          max={10}
           value={kValue}
           onChange={(e) => setKValue(Number(e.target.value))}
-          className="border rounded px-3 py-1 w-24"
+          className='w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600'
         />
+        <div className='flex justify-between text-sm text-gray-500'>
+          <span>2</span>
+          <span>10</span>
+        </div>
       </div>
 
       {/* Quasi-identifiers */}
       <div>
-        <label className="block font-medium mb-1">Select Quasi-Identifiers</label>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+        <label className='block font-medium mb-2 text-gray-700'>
+          Select Quasi-Identifiers
+        </label>
+        <div className='grid grid-cols-2 md:grid-cols-3 gap-3'>
           {columns.map((col) => (
-            <label key={col.name} className="flex items-center space-x-2">
+            <label
+              key={col.name}
+              className='flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded shadow-sm cursor-pointer hover:bg-gray-100'
+            >
               <input
-                type="checkbox"
+                type='checkbox'
                 checked={selectedQIs.includes(col.name)}
                 onChange={() => {
                   if (selectedQIs.includes(col.name)) {
@@ -80,28 +94,32 @@ export const ConfigureTab = ({
                     setSelectedQIs([...selectedQIs, col.name]);
                   }
                 }}
+                className='accent-blue-600'
               />
-              <span>{col.name}</span>
+              <span className='text-gray-700'>{col.name}</span>
             </label>
           ))}
         </div>
       </div>
 
       {/* L-diversity */}
-      <div className="flex items-center space-x-2">
-        <input
-          type="checkbox"
-          checked={requireLDiversity}
-          onChange={(e) => setRequireLDiversity(e.target.checked)}
-        />
-        <span>Require L-diversity</span>
+      <div className='flex items-center space-x-4'>
+        <label className='flex items-center space-x-2 cursor-pointer'>
+          <input
+            type='checkbox'
+            checked={requireLDiversity}
+            onChange={(e) => setRequireLDiversity(e.target.checked)}
+            className='accent-blue-600'
+          />
+          <span className='text-gray-700'>Require L-diversity</span>
+        </label>
         {requireLDiversity && (
           <input
-            type="number"
+            type='number'
             min={2}
             value={lValue}
             onChange={(e) => setLValue(Number(e.target.value))}
-            className="border rounded px-2 py-1 w-20"
+            className='border rounded px-3 py-1 w-24 focus:outline-none focus:ring-2 focus:ring-blue-400'
           />
         )}
       </div>
@@ -110,19 +128,10 @@ export const ConfigureTab = ({
       <button
         onClick={handleRunAnonymization}
         disabled={loading || selectedQIs.length === 0 || !datasetId}
-        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
+        className='px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition'
       >
-        {loading ? "Running..." : "Run Anonymization"}
+        {loading ? 'Running...' : 'Run Anonymization'}
       </button>
-
-      {/* Metrics */}
-      {metrics && (
-        <div className="mt-4 p-2 border rounded bg-gray-50">
-          <p>Total Rows: {metrics.total}</p>
-          <p>Released: {metrics.released}</p>
-          <p>Suppressed: {metrics.suppressed}</p>
-        </div>
-      )}
     </div>
   );
 };
