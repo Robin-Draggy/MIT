@@ -4,7 +4,14 @@ import axios from 'axios';
 import DataTable from 'react-data-table-component';
 import { uploadDataset } from '../../api';
 
-export const DataUpload = ({ setDatasetId, setColumns, setRows, columns, rows, gotoConfigure}) => {
+export const DataUpload = ({
+  setDatasetId,
+  setColumns,
+  setRows,
+  columns,
+  rows,
+  gotoConfigure,
+}) => {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -38,40 +45,38 @@ export const DataUpload = ({ setDatasetId, setColumns, setRows, columns, rows, g
 
   // Upload to backend
   const handleUpload = async () => {
-      if (!file) return alert("Please select a CSV file!");
-  
-      try {
-        setLoading(true);
-        const res = await uploadDataset(file); 
-        console.log(res)
-        setDatasetId(res.data.datasetId);
-        setRows(res.data.data || []);
-        setColumns(res.data.columns || []);
-      } catch (err) {
-        console.error(err);
-        alert("Upload failed!");
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (!file) return alert('Please select a CSV file!');
 
- // Columns for DataTable
-const tableColumns =
-  Array.isArray(columns) && columns.length > 0
-    ? columns.map((col) => ({
-        name: col.name, // 👈 use the name key
-        selector: (row) => {
-          const value = row[col.name];
-          if (typeof value === "object" && value !== null) {
-            return JSON.stringify(value);
-          }
-          return value ?? "";
-        },
-        sortable: true,
-      }))
-    : [];
+    try {
+      setLoading(true);
+      const res = await uploadDataset(file);
+      console.log(res);
+      setDatasetId(res.data.datasetId);
+      setRows(res.data.data || []);
+      setColumns(res.data.columns || []);
+    } catch (err) {
+      console.error(err);
+      alert('Upload failed!');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-
+  // Columns for DataTable
+  const tableColumns =
+    Array.isArray(columns) && columns.length > 0
+      ? columns.map((col) => ({
+          name: col.name, // 👈 use the name key
+          selector: (row) => {
+            const value = row[col.name];
+            if (typeof value === 'object' && value !== null) {
+              return JSON.stringify(value);
+            }
+            return value ?? '';
+          },
+          sortable: true,
+        }))
+      : [];
 
   return (
     <div className='p-6 max-w-6xl mx-auto'>
@@ -155,9 +160,6 @@ const tableColumns =
                 highlightOnHover
                 dense
               />
-              <div className='mt-4'>
-            <button onClick={gotoConfigure} className="px-3 py-1 cursor-pointer bg-blue-700 font-semibold text-white rounded-lg">Let's configure it</button>
-          </div>
             </div>
           )}
         </div>
