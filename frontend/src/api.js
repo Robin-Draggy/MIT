@@ -38,7 +38,7 @@ export const uploadDataset = async (file) => {
   const res = await API.post("/datasets/upload", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
-  return res.data; // { datasetId, name, columns, counts, data }
+  return res; // { datasetId, name, columns, counts, data }
 };
 
 // 📌 Run anonymization
@@ -50,7 +50,7 @@ export const runAnonymization = async (datasetId, config) => {
 // 📌 Get anonymization results
 export const getResults = async (datasetId) => {
   const res = await API.get(`/datasets/${datasetId}/results`);
-  return res.data; // { datasetId, name, counts, data, config }
+  return res; // { datasetId, name, counts, data, config }
 };
 
 // 📌 Export anonymized dataset as CSV (download)

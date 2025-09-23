@@ -1,123 +1,128 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+// src/components/anonymization/ConfigureTab.jsx
+import { useState, useEffect } from "react";
+import axios from "axios";
 
-export const ConfigureTab = ({ datasetId, onApply }) => {
+export const ConfigureTab = ({
+  datasetId,
+  columns = [],
+  goToResults, // optional function to switch to Results tab
+}) => {
   const [kValue, setKValue] = useState(3);
   const [selectedQIs, setSelectedQIs] = useState([]);
-  const [quasiIdentifiers, setQuasiIdentifiers] = useState([]);
+  const [requireLDiversity, setRequireLDiversity] = useState(false);
+  const [lValue, setLValue] = useState(2);
+  const [loading, setLoading] = useState(false);
+  const [metrics, setMetrics] = useState(null);
 
-  // Fetch dataset columns from backend
   useEffect(() => {
-    if (!datasetId) return;
+    // Reset QIs selection if columns change
+    setSelectedQIs([]);
+  }, [columns]);
 
-    const fetchDataset = async () => {
-      try {
-        const res = await axios.get(`http://localhost:3000/api/datasets/${datasetId}/results`);
-        console.log("first", res)
-        if (res.data && res.data.columns) {
-          // columns in backend: array of objects { name, type }
-          setQuasiIdentifiers(res.data.columns.map(col => col.name));
-        } else {
-          // fallback: use keys from first row if columns missing
-          if (res.data.data.length > 0) {
-            setQuasiIdentifiers(Object.keys(res.data.data[0]));
-          }
+  const handleRunAnonymization = async () => {
+    if (!datasetId) return alert("No dataset selected!");
+    if (selectedQIs.length === 0)
+      return alert("Please select at least one quasi-identifier!");
+
+    try {
+      setLoading(true);
+      const res = await axios.post(
+        `http://localhost:3000/api/datasets/${datasetId}/run`,
+        {
+          k: kValue,
+          selectedQIs,
+          requireLDiversity,
+          l: lValue,
         }
-      } catch (err) {
-        console.error('Failed to fetch dataset columns:', err);
-      }
-    };
+      );
 
-    fetchDataset();
-  }, [datasetId]);
+      setMetrics(res.data.counts);
+      alert("Anonymization complete! Check Results tab.");
 
-  const handleCheckboxChange = (qi) => {
-    if (selectedQIs.includes(qi)) {
-      setSelectedQIs(selectedQIs.filter((item) => item !== qi));
-    } else {
-      setSelectedQIs([...selectedQIs, qi]);
+      if (goToResults) goToResults(); // optionally switch to Results tab
+    } catch (err) {
+      console.error(err);
+      alert("Failed to run anonymization.");
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const handleApply = () => {
-    if (selectedQIs.length === 0) {
-      alert('Please select at least one quasi-identifier!');
-      return;
-    }
-    onApply({ k: kValue, selectedQIs });
   };
 
   return (
-    <div className='p-6 max-w-6xl mx-auto'>
-      <h1 className='text-2xl font-bold mb-6'>⚙️ Configure Anonymization</h1>
+    <div className="p-6 bg-white rounded-lg shadow flex flex-col space-y-4 max-w-3xl mx-auto">
+      <h2 className="text-xl font-semibold">Configure Anonymization</h2>
 
-      <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-        {/* Left: k-value + quasi-identifiers */}
-        <div className='bg-white shadow rounded-lg p-6'>
-          <h2 className='text-xl font-semibold mb-4'>K-Anonymity Settings</h2>
+      {/* K-value */}
+      <div>
+        <label className="block font-medium mb-1">k-value</label>
+        <input
+          type="number"
+          min={2}
+          value={kValue}
+          onChange={(e) => setKValue(Number(e.target.value))}
+          className="border rounded px-3 py-1 w-24"
+        />
+      </div>
 
-          {/* K-value */}
-          <div className='mb-6'>
-            <label className='block mb-2 font-medium'>
-              Select k-value: <span className='font-bold'>{kValue}</span>
+      {/* Quasi-identifiers */}
+      <div>
+        <label className="block font-medium mb-1">Select Quasi-Identifiers</label>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          {columns.map((col) => (
+            <label key={col.name} className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={selectedQIs.includes(col.name)}
+                onChange={() => {
+                  if (selectedQIs.includes(col.name)) {
+                    setSelectedQIs(selectedQIs.filter((c) => c !== col.name));
+                  } else {
+                    setSelectedQIs([...selectedQIs, col.name]);
+                  }
+                }}
+              />
+              <span>{col.name}</span>
             </label>
-            <input
-              type='range'
-              min={1}
-              max={10}
-              value={kValue}
-              onChange={(e) => setKValue(Number(e.target.value))}
-              className='w-full accent-blue-600'
-            />
-          </div>
-
-          {/* Quasi-identifiers checkboxes */}
-          <div>
-            <label className='block mb-2 font-medium'>Select Quasi-Identifiers:</label>
-            <div className='flex flex-col space-y-2'>
-              {quasiIdentifiers.length === 0 && (
-                <p className='text-gray-500'>No quasi-identifiers available</p>
-              )}
-              {quasiIdentifiers.map((qi) => (
-                <label key={qi} className='flex items-center space-x-2'>
-                  <input
-                    type='checkbox'
-                    checked={selectedQIs.includes(qi)}
-                    onChange={() => handleCheckboxChange(qi)}
-                    className='accent-blue-600'
-                  />
-                  <span>{qi}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Right: generalization settings */}
-        <div className='bg-white shadow rounded-lg p-6 flex flex-col'>
-          <h2 className='text-xl font-semibold mb-4'>Generalization Settings</h2>
-
-          <div className='mb-4'>
-            <p className='font-medium mb-2'>Selected Quasi-Identifiers:</p>
-            {selectedQIs.length > 0 ? (
-              <ul className='list-disc list-inside text-gray-700'>
-                {selectedQIs.map((qi) => (
-                  <li key={qi}>{qi}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className='text-gray-500'>No quasi-identifiers selected</p>
-            )}
-          </div>
-
-          <button
-            onClick={handleApply}
-            className='mt-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition'
-          >
-            Apply K-Anonymization
-          </button>
+          ))}
         </div>
       </div>
+
+      {/* L-diversity */}
+      <div className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          checked={requireLDiversity}
+          onChange={(e) => setRequireLDiversity(e.target.checked)}
+        />
+        <span>Require L-diversity</span>
+        {requireLDiversity && (
+          <input
+            type="number"
+            min={2}
+            value={lValue}
+            onChange={(e) => setLValue(Number(e.target.value))}
+            className="border rounded px-2 py-1 w-20"
+          />
+        )}
+      </div>
+
+      {/* Run Anonymization */}
+      <button
+        onClick={handleRunAnonymization}
+        disabled={loading || selectedQIs.length === 0 || !datasetId}
+        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {loading ? "Running..." : "Run Anonymization"}
+      </button>
+
+      {/* Metrics */}
+      {metrics && (
+        <div className="mt-4 p-2 border rounded bg-gray-50">
+          <p>Total Rows: {metrics.total}</p>
+          <p>Released: {metrics.released}</p>
+          <p>Suppressed: {metrics.suppressed}</p>
+        </div>
+      )}
     </div>
   );
 };

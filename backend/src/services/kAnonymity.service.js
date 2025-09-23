@@ -165,7 +165,17 @@ function anonymizeK(records = [], opts = {}) {
     anonymized: outAnonymized,
     suppressed: outSuppressed,
     levels: { age: ageLevel },
-    metrics
+    metrics: {
+    total: records.length,
+    released: outAnonymized.length,
+    suppressed: outSuppressed.length,
+    suppressionRate: outSuppressed.length / records.length,
+    equivalenceClasses: Array.from(groups.values()).map(g => g.length), // size of each class
+    infoLoss: ageLevel / maxAge, // simple approximation
+    kAnonymity: violateKeys.length === 0,
+    privacyLevel: 1 - (outSuppressed.length / records.length),
+    avgClassSize: outAnonymized.length / groups.size,
+  }
   };
 }
 

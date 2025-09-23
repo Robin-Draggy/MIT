@@ -4,6 +4,7 @@ import { OverviewTab } from "../../components/overview-tab/Overview.tab";
 import { DataUpload } from "../../components/data-upload/DataUpload";
 import { ConfigureTab } from "../../components/anonymization/ConfigureTab";
 import { exportResults } from "../../api";
+import { ResultsTab } from "../../components/anonymization/ResultTab";
 
 export const AnnonymizationResults = () => {
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -50,6 +51,8 @@ export const AnnonymizationResults = () => {
               setDatasetId={setDatasetId}
               setColumns={setColumns}
               setRows={setRows}
+              columns={columns}
+              rows={rows}
               goToConfigure={() => setSelectedIndex(2)}
             />
           </Tab.Panel>
@@ -58,35 +61,14 @@ export const AnnonymizationResults = () => {
           <Tab.Panel className="rounded-xl bg-white p-6 shadow">
             <ConfigureTab
               datasetId={datasetId}
-              setResults={setResults}
+              columns={columns}
               goToResults={() => setSelectedIndex(3)}
             />
           </Tab.Panel>
 
           {/* Results */}
           <Tab.Panel className="rounded-xl bg-white p-6 shadow">
-            <h2 className="text-lg font-semibold">Results</h2>
-
-            {results ? (
-              <div className="mt-4">
-                <p className="text-gray-700">
-                  <strong>Total:</strong> {results.counts.total} |{" "}
-                  <strong>Released:</strong> {results.counts.released} |{" "}
-                  <strong>Suppressed:</strong> {results.counts.suppressed}
-                </p>
-
-                <button
-                  onClick={() => exportResults(datasetId)}
-                  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
-                >
-                  Download Anonymized CSV
-                </button>
-              </div>
-            ) : (
-              <p className="mt-2 text-gray-600">
-                Run anonymization in the Configure tab to see results here.
-              </p>
-            )}
+            <ResultsTab datasetId={datasetId} />
           </Tab.Panel>
         </Tab.Panels>
       </Tab.Group>
