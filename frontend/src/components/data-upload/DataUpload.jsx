@@ -10,7 +10,7 @@ export const DataUpload = ({
   setRows,
   columns,
   rows,
-  gotoConfigure,
+  goToConfigure,
 }) => {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -160,6 +160,14 @@ export const DataUpload = ({
                 highlightOnHover
                 dense
               />
+              <div className='mt-3'>
+                <button
+                  onClick={goToConfigure}
+                  className='px-3 py-1 cursor-pointer bg-blue-700 font-semibold text-white rounded-lg'
+                >
+                  Go to Configure
+                </button>
+              </div>
             </div>
           )}
         </div>
