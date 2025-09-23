@@ -28,25 +28,28 @@ router.post('/upload', upload.single('file'), async (req, res, next) => {
         : null,
     }));
 
-    // Build columns
-    let columns = Object.keys(rows[0] || {}).map((name) => ({
-      name: String(name),
+    // Build columns directly as array of objects
+    const columns = Object.keys(rows[0] || {}).map((name) => ({
+      name,
       type: 'string',
     }));
 
-    // 🛑 Debugging logs
-    console.log("🔎 Type of columns:", typeof columns);
-    console.log("🔎 Is Array?", Array.isArray(columns));
-    console.log("🔎 First column:", columns[0]);
-
     const ds = new Dataset({
       name: req.file.originalname,
-      columns,
+      columns, // ✅ stays array of objects
       rows,
     });
 
     await ds.save();
-    res.json({ datasetId: ds._id });
+
+    // ✅ Return dataset info + rows for frontend preview
+    res.json({
+      datasetId: ds._id,
+      name: ds.name,
+      columns: ds.columns,
+      counts: { total: ds.rows.length },
+      data: ds.rows, // 👈 now available as result.data.data
+    });
   } catch (err) {
     next(err);
   }
@@ -101,6 +104,7 @@ router.get('/:id/results', async (req, res, next) => {
   try {
     const ds = await Dataset.findById(req.params.id).lean();
     if (!ds) return res.status(404).json({ message: 'Dataset not found' });
+
     res.json({
       datasetId: ds._id,
       name: ds.name,
@@ -129,6 +133,7 @@ router.get('/:id/export', async (req, res, next) => {
 
     const parser = new Parser();
     const csv = parser.parse(rows);
+
     res.header('Content-Type', 'text/csv');
     res.attachment(`${ds.name || 'dataset'}-anonymized.csv`);
     return res.send(csv);

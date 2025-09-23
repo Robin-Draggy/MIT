@@ -24,7 +24,6 @@ export const Dashboard = () => {
     fetchData();
   }, []);
 
-  console.log('data', data);
   if (loading) return <p className='text-center mt-10'>Loading...</p>;
 
   if (!stats) return <p className='text-center mt-10'>No data available</p>;
