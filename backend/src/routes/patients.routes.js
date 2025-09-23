@@ -1,14 +1,30 @@
-import { Router } from "express";
-import validate from "../middlewares/validate.middleware.js";
-import { patientSchema } from "../validators/patient.validator.js";
-import * as controller from "../controllers/patient.controller.js";
+// src/routes/patients.routes.js
+const express = require('express');
+const router = express.Router();
+const validate = require('../middlewares/validate.middleware');
+const { patientSchema } = require('../validators/patient.validator');
+const controller = require('../controllers/patient.controller');
 
-const router = Router();
+// 📌 Create patient
+router.post('/', validate(patientSchema), controller.addPatient);
 
-// POST /api/patients
-router.post("/", validate(patientSchema), controller.addPatient);
+// 📌 Get anonymized patients
+router.get('/anonymized', controller.getAnonymized);
 
-// GET /api/patients/anonymized?k=3
-router.get("/anonymized", controller.getAnonymized);
+// 📌 Get all patients
+router.get('/', async (req, res, next) => {
+  try {
+    const patients = await require('../models/patient.model').find().lean();
+    res.json(patients);
+  } catch (err) {
+    next(err);
+  }
+});
 
-export default router;
+// 📌 Update patient
+router.put('/:id', validate(patientSchema), controller.updatePatient);
+
+// 📌 Delete patient
+router.delete('/:id', controller.deletePatient);
+
+module.exports = router;

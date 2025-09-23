@@ -1,50 +1,95 @@
-import React from 'react';
-import { PrivacyMetrics } from '../../components/charts/PrivacyMetrics';
+import { Tab } from "@headlessui/react";
+import { useState } from "react";
+import { OverviewTab } from "../../components/overview-tab/Overview.tab";
+import { DataUpload } from "../../components/data-upload/DataUpload";
+import { ConfigureTab } from "../../components/anonymization/ConfigureTab";
+import { exportResults } from "../../api";
 
 export const AnnonymizationResults = () => {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  // 🔹 Global state for the flow
+  const [datasetId, setDatasetId] = useState(null);
+  const [columns, setColumns] = useState([]);
+  const [rows, setRows] = useState([]);
+  const [results, setResults] = useState(null);
+
   return (
-    <div className="p-8">
-      <h2 className="text-lg font-semibold pb-2 mb-4">
-        Anonymization Results - <span className="text-[#3742fa]">patient_records_2024</span>
-      </h2>
+    <div className="w-full px-4 py-6">
+      <Tab.Group selectedIndex={selectedIndex} onChange={setSelectedIndex}>
+        {/* Tabs */}
+        <Tab.List className="flex space-x-1 rounded-xl bg-gray-200 p-1">
+          {["Overview", "Data Upload", "Configure", "Results"].map((tab) => (
+            <Tab
+              key={tab}
+              className={({ selected }) =>
+                `w-full rounded-lg py-2.5 text-sm font-medium leading-5 
+                 focus:outline-none focus:ring-2 ring-offset-2 
+                 ring-offset-gray-200 ring-white ring-opacity-60 ${
+                   selected
+                     ? "bg-white shadow text-blue-600"
+                     : "text-gray-600 hover:bg-white/[0.5] hover:text-blue-600"
+                 }`
+              }
+            >
+              {tab}
+            </Tab>
+          ))}
+        </Tab.List>
 
-      <div className="mb-6">
-        <h3 className="flex items-center gap-2 font-semibold">
-          ✅ <span>Anonymization Complete</span>
-        </h3>
-        <p className="mt-2 text-sm text-[#2f3542] bg-white rounded-2xl shadow-lg p-4">
-          Processing Time: <span className="text-black">2m 34s</span> | Records Processed: <span className="text-black">12,543</span>
-        </p>
-      </div>
+        {/* Panels */}
+        <Tab.Panels className="mt-4">
+          {/* Overview */}
+          <Tab.Panel className="rounded-xl p-6 shadow">
+            <OverviewTab goToDataUpload={() => setSelectedIndex(1)} />
+          </Tab.Panel>
 
-      {/* Privacy Metrics */}
-      <PrivacyMetrics />
+          {/* Data Upload */}
+          <Tab.Panel className="rounded-xl bg-white p-6 shadow">
+            <DataUpload
+              setDatasetId={setDatasetId}
+              setColumns={setColumns}
+              setRows={setRows}
+              goToConfigure={() => setSelectedIndex(2)}
+            />
+          </Tab.Panel>
 
-      {/* Quality Validation */}
-      <div className="mb-6 rounded-md">
-        <h3 className="text-base font-semibold mb-2">Quality Validation:</h3>
-        <div className='bg-white rounded-2xl shadow-lg p-4'>
-        <ul className="text-sm text-[#2f3542] space-y-1">
-          <li>✅ No identifiable individuals found</li>
-          <li>✅ All quasi-identifier groups meet k=5 requirement</li>
-          <li>✅ Data integrity maintained</li>
-          <li>⚠️ 3 records suppressed due to outlier values</li>
-        </ul>
-        </div>
-      </div>
+          {/* Configure */}
+          <Tab.Panel className="rounded-xl bg-white p-6 shadow">
+            <ConfigureTab
+              datasetId={datasetId}
+              setResults={setResults}
+              goToResults={() => setSelectedIndex(3)}
+            />
+          </Tab.Panel>
 
-      {/* Actions */}
-      <div className="flex gap-4 mt-6 text-sm">
-        <button className="bg-[#3742fa] hover:bg-blue-700 px-4 py-2 rounded-lg text-white font-medium">
-          📥 Download Anonymized Data
-        </button>
-        <button className="bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-lg text-white font-medium">
-          📄 Generate Report
-        </button>
-        <button className="bg-[#3742fa] hover:bg-blue-900 px-4 py-2 rounded-lg text-white font-medium">
-          🔄 Retry
-        </button>
-      </div>
+          {/* Results */}
+          <Tab.Panel className="rounded-xl bg-white p-6 shadow">
+            <h2 className="text-lg font-semibold">Results</h2>
+
+            {results ? (
+              <div className="mt-4">
+                <p className="text-gray-700">
+                  <strong>Total:</strong> {results.counts.total} |{" "}
+                  <strong>Released:</strong> {results.counts.released} |{" "}
+                  <strong>Suppressed:</strong> {results.counts.suppressed}
+                </p>
+
+                <button
+                  onClick={() => exportResults(datasetId)}
+                  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
+                >
+                  Download Anonymized CSV
+                </button>
+              </div>
+            ) : (
+              <p className="mt-2 text-gray-600">
+                Run anonymization in the Configure tab to see results here.
+              </p>
+            )}
+          </Tab.Panel>
+        </Tab.Panels>
+      </Tab.Group>
     </div>
   );
 };

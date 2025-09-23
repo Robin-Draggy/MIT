@@ -1,0 +1,166 @@
+// src/pages/DataUploadPage.jsx
+import { useState } from 'react';
+import axios from 'axios';
+import DataTable from 'react-data-table-component';
+
+export const DataUpload = ({ set}) => {
+  const [file, setFile] = useState(null);
+  const [datasetId, setDatasetId] = useState(null);
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  // Handle file select
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
+
+  // Upload to backend
+  const handleUpload = async () => {
+    if (!file) return alert('Please select a CSV file first!');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      setLoading(true);
+      const res = await axios.post(
+        'http://localhost:3000/api/datasets/upload',
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        }
+      );
+
+      setDatasetId(res.data.datasetId);
+
+      setRows(res.data.data);
+    } catch (err) {
+      console.error(err);
+      alert('Upload failed!');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Columns for DataTable
+  const tableColumns =
+    rows.length > 0
+      ? Object.keys(rows[0]).map((key) => ({
+          name: key,
+          selector: (row) => row[key],
+          sortable: true,
+        }))
+      : [];
+
+  return (
+    <div className='p-6 max-w-6xl mx-auto'>
+      <h1 className='text-3xl font-bold mb-6'>Data Upload</h1>
+
+      <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+        {/* File Upload Card */}
+        <div className='bg-white shadow rounded-lg p-6 flex flex-col'>
+          <div className='mb-4'>
+            <label
+              htmlFor='file-upload'
+              className={`flex flex-col items-center justify-center h-72 border-2 border-dashed rounded-lg cursor-pointer transition
+        ${
+          dragActive
+            ? 'border-blue-500 bg-green-200'
+            : 'border-gray-400 bg-green-100'
+        }
+      `}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              {/* Icon */}
+              <div className='text-6xl mb-4 text-gray-500'>📂</div>
+              {/* Instruction text */}
+              <p className='text-gray-700 text-lg text-center px-4'>
+                Drag and drop your CSV file here <br />
+                or click to browse
+              </p>
+              <input
+                id='file-upload'
+                type='file'
+                accept='.csv'
+                onChange={handleFileChange}
+                className='hidden'
+              />
+            </label>
+          </div>
+
+          {/* Selected file info */}
+          {file && (
+            <div className='text-sm text-gray-700 mb-4 space-y-1'>
+              <p>
+                <span className='font-semibold'>File Name:</span> {file.name}
+              </p>
+              <p>
+                <span className='font-semibold'>File Size:</span>{' '}
+                {(file.size / 1024).toFixed(2)} KB
+              </p>
+              <p>
+                <span className='font-semibold'>File Type:</span>{' '}
+                {file.type || 'CSV'}
+              </p>
+            </div>
+          )}
+
+          <button
+            onClick={handleUpload}
+            disabled={loading || !file}
+            className='mt-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition'
+          >
+            {loading ? 'Uploading...' : 'Upload'}
+          </button>
+        </div>
+
+        {/* Data Preview Card */}
+        <div className='bg-white shadow rounded-lg p-6 flex flex-col'>
+          {rows.length === 0 ? (
+            <div className='text-center font-bold text-gray-500 mt-6'>
+              <h2 className='text-xl font-semibold mb-4'>📊 Dataset Preview</h2>
+              <p>Upload the CSV file</p>
+            </div>
+          ) : (
+            <div className='flex flex-col'>
+              <h2 className='text-xl font-semibold mb-4'>📊 Dataset Preview</h2>
+              <DataTable
+                columns={tableColumns}
+                data={rows}
+                pagination
+                paginationPerPage={10}
+                highlightOnHover
+                dense
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};

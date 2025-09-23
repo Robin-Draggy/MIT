@@ -1,3 +1,6 @@
-export const info = (...args) => console.log("[INFO]", ...args);
-export const warn = (...args) => console.warn("[WARN]", ...args);
-export const error = (...args) => console.error("[ERROR]", ...args);
+// src/logger.js
+module.exports = {
+  info: (...args) => console.log('[INFO]', ...args),
+  warn: (...args) => console.warn('[WARN]', ...args),
+  error: (...args) => console.error('[ERROR]', ...args)
+};
