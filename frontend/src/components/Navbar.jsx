@@ -11,7 +11,7 @@ export const Navbar = () => {
           {/* Logo */}
           <div>
             <Link to="/">
-              <h2 className="text-2xl font-bold text-[#3742fa] tracking-wide hover:scale-105 transition-transform duration-300">
+              <h2 className="text-2xl font-bold text-[#21808D] tracking-wide hover:scale-105 transition-transform duration-300">
                 MIT Hospital
               </h2>
             </Link>
@@ -20,7 +20,7 @@ export const Navbar = () => {
           {/* Settings Icon */}
           <div>
             <div className="p-3 rounded-full bg-[#3742fa1a] hover:bg-[#3742fa33] transition duration-300 cursor-pointer shadow-sm">
-              <IoSettings size={22} className="text-[#3742fa]" />
+              <IoSettings size={22} className="text-[#21808D]" />
             </div>
           </div>
         </div>

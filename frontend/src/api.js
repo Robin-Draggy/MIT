@@ -53,7 +53,10 @@ export const getResults = async (datasetId) => {
   return res; // { datasetId, name, counts, data, config }
 };
 
-// 📌 Export anonymized dataset as CSV (download)
-export const exportResults = (datasetId) => {
-  window.open(`${API.defaults.baseURL}/datasets/${datasetId}/export`, "_blank");
-};
+
+
+// Export anonymized results (CSV)
+export const exportResults = (datasetId) =>
+  API.get(`/datasets/${datasetId}/export`, {
+    responseType: "blob", // <-- Important!
+  });

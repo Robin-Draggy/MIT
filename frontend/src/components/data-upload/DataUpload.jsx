@@ -1,6 +1,5 @@
 // src/pages/DataUploadPage.jsx
 import { useState } from 'react';
-import axios from 'axios';
 import DataTable from 'react-data-table-component';
 import { uploadDataset } from '../../api';
 
@@ -78,9 +77,20 @@ export const DataUpload = ({
         }))
       : [];
 
+  const customStyles = {
+    headCells: {
+      style: {
+        backgroundColor: '#F5DDE5', // your desired background color
+        color: '#ffffff', // text color
+        fontWeight: 'bold',
+        fontSize: '14px',
+      },
+    },
+  };
+
   return (
     <div className='p-6 max-w-6xl mx-auto'>
-      <h1 className='text-3xl font-bold mb-6'>Data Upload</h1>
+      <h1 className='text-3xl font-bold mb-6'>Upload Dataset</h1>
 
       <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
         {/* File Upload Card */}
@@ -100,10 +110,12 @@ export const DataUpload = ({
               onDrop={handleDrop}
             >
               {/* Icon */}
-              <div className='text-6xl mb-4 text-gray-500'>📂</div>
+              <div className='text-6xl mb-4'>📂</div>
               {/* Instruction text */}
-              <p className='text-gray-700 text-lg text-center px-4'>
+              <p className='text-gray-700 text-xl font-bold text-center px-4'>
                 Drag and drop your CSV file here <br />
+              </p>
+              <p className='text-gray-700 text-lg text-center'>
                 or click to browse
               </p>
               <input
@@ -112,31 +124,50 @@ export const DataUpload = ({
                 accept='.csv'
                 onChange={handleFileChange}
                 className='hidden'
+                customStyles={customStyles}
               />
             </label>
           </div>
 
           {/* Selected file info */}
           {file && (
-            <div className='text-sm text-gray-700 mb-4 space-y-1'>
-              <p>
-                <span className='font-semibold'>File Name:</span> {file.name}
-              </p>
-              <p>
-                <span className='font-semibold'>File Size:</span>{' '}
-                {(file.size / 1024).toFixed(2)} KB
-              </p>
-              <p>
-                <span className='font-semibold'>File Type:</span>{' '}
-                {file.type || 'CSV'}
-              </p>
+            <div className='space-y-4'>
+              <div className='flex flex-col text-gray-700'>
+                <h2 className='text-2xl font-bold'>Sample Dataasets</h2>
+                <button 
+                onClick={goToConfigure}
+                className='border px-3 py-2 capitalize rounded-lg cursor-pointer'>
+                  Load Paitent sample data
+                </button>
+              </div>
+              <div className='text-sm text-gray-700 mb-4 space-y-3 p-4 border border-gray-300 rounded-lg bg-[#F6E3D9]'>
+                <h2 className='text-2xl font-bold'>File Information</h2>
+                <div className='flex justify-between items-center px-2 py-3 border-gray-200 bg-[#ECCDBA] rounded-lg'>
+                  <p className='text-md font-semibold'>File Name: </p>
+                  <span className='font-semibold text-[#21808D]'>
+                    {file.name}
+                  </span>
+                </div>
+                <div className='flex justify-between items-center px-2 py-3 border-gray-200 bg-[#ECCDBA] rounded-lg'>
+                  <p className='text-md font-semibold'>File Size: </p>
+                  <span className='font-semibold text-[#21808D]'>
+                    {(file.size / 1024).toFixed(2)} KB
+                  </span>
+                </div>
+                <div className='flex justify-between items-center px-2 py-3 border-gray-200 bg-[#ECCDBA] rounded-lg'>
+                  <p className='text-md font-semibold'>File Type: </p>
+                  <span className='font-semibold text-[#21808D]'>
+                    {file.type || 'CSV'}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
 
           <button
             onClick={handleUpload}
             disabled={loading || !file}
-            className='mt-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition'
+            className='mt-auto px-4 py-2 bg-[#21808D] cursor-pointer text-white font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition'
           >
             {loading ? 'Uploading...' : 'Upload'}
           </button>
@@ -144,14 +175,15 @@ export const DataUpload = ({
 
         {/* Data Preview Card */}
         <div className='bg-white shadow rounded-lg p-6 flex flex-col'>
+          <h2 className='text-xl font-semibold mb-4'>Data Preview</h2>
           {rows.length === 0 ? (
-            <div className='text-center font-bold text-gray-500 mt-6'>
-              <h2 className='text-xl font-semibold mb-4'>📊 Dataset Preview</h2>
-              <p>Upload the CSV file</p>
+            <div className=' text-gray-500'>
+              <div className='border px-3 py-2 rounded-lg'>
+                <p>Upload a file to see data preview</p>
+              </div>
             </div>
           ) : (
             <div className='flex flex-col'>
-              <h2 className='text-xl font-semibold mb-4'>📊 Dataset Preview</h2>
               <DataTable
                 columns={tableColumns}
                 data={rows}
@@ -160,14 +192,6 @@ export const DataUpload = ({
                 highlightOnHover
                 dense
               />
-              <div className='mt-3'>
-                <button
-                  onClick={goToConfigure}
-                  className='px-3 py-1 cursor-pointer bg-blue-700 font-semibold text-white rounded-lg'
-                >
-                  Go to Configure
-                </button>
-              </div>
             </div>
           )}
         </div>
