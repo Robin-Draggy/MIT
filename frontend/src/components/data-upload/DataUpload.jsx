@@ -49,7 +49,6 @@ export const DataUpload = ({
     try {
       setLoading(true);
       const res = await uploadDataset(file);
-      console.log(res);
       setDatasetId(res.data.datasetId);
       setRows(res.data.data || []);
       setColumns(res.data.columns || []);

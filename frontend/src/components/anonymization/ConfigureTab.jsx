@@ -13,6 +13,11 @@ export const ConfigureTab = ({ datasetId, goToResults }) => {
   const [selectedQIs, setSelectedQIs] = useState([]);
   const [requireLDiversity, setRequireLDiversity] = useState(false);
   const [lValue, setLValue] = useState(2);
+
+  // FIXED: Better default values - at least one method should be enabled
+  const [useGeneralization, setUseGeneralization] = useState(true);
+  const [useSuppression, setUseSuppression] = useState(true);
+
   const [loading, setLoading] = useState(false);
   const [metrics, setMetrics] = useState(null);
 
@@ -20,11 +25,25 @@ export const ConfigureTab = ({ datasetId, goToResults }) => {
     if (!datasetId) return alert('No dataset selected!');
     if (selectedQIs.length === 0)
       return alert('Please select at least one quasi-identifier!');
+
+    // FIXED: Validate that at least one method is enabled
+    if (!useGeneralization && !useSuppression) {
+      return alert('Please enable at least one anonymization method (Generalization or Suppression)');
+    }
+
     try {
       setLoading(true);
       const res = await axios.post(
         `http://localhost:3000/api/datasets/${datasetId}/run`,
-        { k: kValue, selectedQIs, requireLDiversity, l: lValue }
+        {
+          k: kValue,
+          selectedQIs,
+          requireLDiversity,
+          l: lValue,
+          // FIXED: Match backend parameter names
+          generalize: useGeneralization,
+          suppression: useSuppression,
+        }
       );
       setMetrics(res.data.counts);
       goToResults?.();
@@ -44,6 +63,7 @@ export const ConfigureTab = ({ datasetId, goToResults }) => {
           <h2 className='text-2xl font-bold text-gray-800 mb-2'>
             Anonymization Parameters
           </h2>
+
           {/* K-value Slider */}
           <div className='space-y-2'>
             <label className='block font-medium text-gray-700'>
@@ -95,44 +115,113 @@ export const ConfigureTab = ({ datasetId, goToResults }) => {
             </div>
           </div>
 
-          
+          {/* FIXED: L-diversity controls */}
+          <div className='space-y-3 p-3 border border-gray-200 rounded-lg'>
+            <label className='flex items-center gap-2 cursor-pointer'>
+              <input
+                type='checkbox'
+                checked={requireLDiversity}
+                onChange={() => setRequireLDiversity(!requireLDiversity)}
+                className='accent-blue-600'
+              />
+              <span className='font-medium text-gray-700'>Enable L-Diversity</span>
+            </label>
+            
+            {requireLDiversity && (
+              <div className='space-y-2 ml-6'>
+                <label className='block text-sm font-medium text-gray-700'>
+                  L-value (Diversity level)
+                </label>
+                <input
+                  type='number'
+                  min={2}
+                  max={5}
+                  value={lValue}
+                  onChange={(e) => setLValue(Number(e.target.value))}
+                  className='w-20 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500'
+                />
+                <p className='text-xs text-gray-500'>
+                  Minimum distinct sensitive values per group
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* FIXED: Generalization & Suppression with better UX */}
+          <div className='space-y-3 p-3 border border-gray-200 rounded-lg'>
+            <label className='block font-medium text-gray-700'>
+              Anonymization Methods
+            </label>
+            <div className='flex flex-col gap-3'>
+              <label className='flex items-center gap-2 cursor-pointer'>
+                <input
+                  type='checkbox'
+                  checked={useGeneralization}
+                  onChange={() => setUseGeneralization(!useGeneralization)}
+                  className='accent-blue-600'
+                />
+                <span className='text-gray-700'>
+                  Generalization (Age grouping)
+                </span>
+              </label>
+              <label className='flex items-center gap-2 cursor-pointer'>
+                <input
+                  type='checkbox'
+                  checked={useSuppression}
+                  onChange={() => setUseSuppression(!useSuppression)}
+                  className='accent-blue-600'
+                />
+                <span className='text-gray-700'>
+                  Suppression (Remove risky records)
+                </span>
+              </label>
+            </div>
+            
+            {/* FIXED: Warning when both methods are disabled */}
+            {!useGeneralization && !useSuppression && (
+              <p className='text-sm text-red-600 mt-2'>
+                ⚠️ At least one method must be enabled
+              </p>
+            )}
+            
+            {/* FIXED: Help text */}
+            <p className='text-xs text-gray-500 mt-2'>
+              <strong>Generalization</strong>: Groups ages into ranges (e.g., 20-29, 30-39)<br/>
+              <strong>Suppression</strong>: Removes records that cannot meet k-anonymity
+            </p>
+          </div>
         </div>
 
         {/* Right: Selected QIs display */}
         <div className='flex-1 space-y-3 border border-gray-200 shadow-sm p-4 rounded-lg'>
           <h3 className='text-2xl font-bold text-gray-800 mb-2'>
-            Generalization Settings
+            Configuration Summary
           </h3>
-          {selectedQIs.length === 0 ? (
-            <p className='text-gray-500'>
-              Select quasi-identifiers to configure generalization levels
-            </p>
-          ) : (
-            <div className='space-y-3'>
-              {selectedQIs.map((qiName) => {
-                const qi = QUASI_IDENTIFIERS.find((q) => q.name === qiName);
-                return (
-                  <div
-                    key={qi.name}
-                    className='bg-gray-50 p-3 rounded-lg shadow-sm flex flex-col hover:bg-gray-100 transition'
-                  >
-                    <span className='font-medium text-gray-700'>{qi.name}</span>
-                    <span className='text-gray-500 text-sm'>{qi.details}</span>
-                  </div>
-                );
-              })}
-
-              <div className='w-full'>
-                <button
-                  onClick={handleRunAnonymization}
-                  disabled={loading || selectedQIs.length === 0 || !datasetId}
-                  className='w-full px-6 py-2 bg-[#21808D] text-white cursor-pointer rounded shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition'
-                >
-                  {loading ? 'Running...' : 'Apply K-Anonymity'}
-                </button>
-              </div>
+          
+          <div className='space-y-4'>
+            {/* Configuration Summary */}
+            <div className='bg-gray-50 p-4 rounded-lg'>
+              <h4 className='font-semibold text-gray-700 mb-2'>Current Settings:</h4>
+              <ul className='text-sm text-gray-600 space-y-1'>
+                <li>• <strong>k-value</strong>: {kValue}</li>
+                <li>• <strong>Quasi-identifiers</strong>: {selectedQIs.length > 0 ? selectedQIs.join(', ') : 'None selected'}</li>
+                <li>• <strong>L-diversity</strong>: {requireLDiversity ? `Enabled (l=${lValue})` : 'Disabled'}</li>
+                <li>• <strong>Generalization</strong>: {useGeneralization ? 'Enabled' : 'Disabled'}</li>
+                <li>• <strong>Suppression</strong>: {useSuppression ? 'Enabled' : 'Disabled'}</li>
+              </ul>
             </div>
-          )}
+
+            {/* Run Button */}
+            <div className='w-full'>
+              <button
+                onClick={handleRunAnonymization}
+                disabled={loading || selectedQIs.length === 0 || !datasetId || (!useGeneralization && !useSuppression)}
+                className='w-full px-6 py-3 bg-[#21808D] text-white cursor-pointer rounded-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition hover:bg-[#1a6d78]'
+              >
+                {loading ? 'Running Anonymization...' : 'Apply K-Anonymity'}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

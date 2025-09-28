@@ -19,6 +19,7 @@ export const privateRoutes = [
         name: "",
         element: <NotFound />,
       },
+    
     ],
   },
 ]
