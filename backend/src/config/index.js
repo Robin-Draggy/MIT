@@ -5,7 +5,7 @@ dotenv.config();
 module.exports = {
   port: process.env.PORT || 3000,
   db: {
-    uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/health_data'
+    uri: 'mongodb://localhost:27017/health_data'
   },
   security: {
     corsOrigins: (process.env.CORS_ORIGINS || '').split(',').filter(Boolean),

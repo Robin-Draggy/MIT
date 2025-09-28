@@ -1,22 +1,27 @@
 // src/utils/generalizers.js
 
-// Age ladder: level 0 = exact age, 1 = 10-year buckets, 2 = 20-year buckets, 3 = Any
+// Age ladder: level 0 = exact age, level 1 = fixed 10-year buckets (10–100)
 const ageLadder = [
-  (age) => (age == null ? "Unknown" : String(age)), // level 0 exact
+  // Level 0: exact age
+  (age) => (age == null ? "Unknown" : String(age)),
+
+  // Level 1: fixed buckets
   (age) => {
     if (age == null) return "Unknown";
     const a = Number(age);
-    const lo = Math.floor(a / 10) * 10;
-    return `[${lo}-${lo + 9}]`;
-  },
-  (age) => {
-    if (age == null) return "Unknown";
-    const a = Number(age);
-    if (a < 30) return "[<30]";
-    if (a < 60) return "[30-59]";
-    return "[60+]";
-  },
-  (age) => "[Any Age]",
+
+    if (a < 10) return "[0-9]";
+    if (a <= 19) return "[10-19]";
+    if (a <= 29) return "[20-29]";
+    if (a <= 39) return "[30-39]";
+    if (a <= 49) return "[40-49]";
+    if (a <= 59) return "[50-59]";
+    if (a <= 69) return "[60-69]";
+    if (a <= 79) return "[70-79]";
+    if (a <= 89) return "[80-89]";
+    if (a <= 100) return "[90-100]";
+    return "[100+]"; // fallback for ages > 100
+  }
 ];
 
 function generalizeAge(age, level) {

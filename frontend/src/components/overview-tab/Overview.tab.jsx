@@ -62,7 +62,7 @@ export const OverviewTab = ({ goToDataUpload }) => {
           </div>
           <div className='flex flex-col gap-4'>
             <div className='flex items-start gap-3'>
-              <div className='bg-blue-800 rounded-full w-6 h-6 flex items-center justify-center'>
+              <div className='bg-[#21808D] rounded-full w-6 h-6 flex items-center justify-center'>
                 <p className='text-white text-sm font-bold'>1</p>
               </div>
 
@@ -72,7 +72,7 @@ export const OverviewTab = ({ goToDataUpload }) => {
               </div>
             </div>
             <div className='flex items-start gap-3'>
-              <div className='bg-blue-800 rounded-full w-6 h-6 flex items-center justify-center'>
+              <div className='bg-[#21808D] rounded-full w-6 h-6 flex items-center justify-center'>
                 <p className='text-white text-sm font-bold'>2</p>
               </div>
 
@@ -82,7 +82,7 @@ export const OverviewTab = ({ goToDataUpload }) => {
               </div>
             </div>
             <div className='flex items-start gap-3'>
-              <div className='bg-blue-800 rounded-full w-6 h-6 flex items-center justify-center'>
+              <div className='bg-[#21808D] rounded-full w-6 h-6 flex items-center justify-center'>
                 <p className='text-white text-sm font-bold'>3</p>
               </div>
 
@@ -93,7 +93,7 @@ export const OverviewTab = ({ goToDataUpload }) => {
             </div>
           </div>
           <div>
-            <button onClick={goToDataUpload} className="px-3 py-1 cursor-pointer bg-blue-700 font-semibold text-white rounded-lg">Start Anonymization Process</button>
+            <button onClick={goToDataUpload} className="px-3 py-1 cursor-pointer bg-[#21808D] font-semibold text-white rounded-lg">Start Anonymization Process</button>
           </div>
         </div>
       </div>

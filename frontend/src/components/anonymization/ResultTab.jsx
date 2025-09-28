@@ -52,118 +52,183 @@ export const ResultsTab = ({ datasetId }) => {
   };
 
   if (!results)
-  return (
-    <div className="flex flex-col items-center justify-center h-64">
-      <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent border-b-transparent rounded-full animate-spin"></div>
-      <p className="mt-4 text-gray-600 font-medium">Loading anonymization results...</p>
-    </div>
-  );
-
+    return (
+      <div className='flex flex-col items-center justify-center h-64'>
+        <div className='w-16 h-16 border-4 border-blue-600 border-t-transparent border-b-transparent rounded-full animate-spin'></div>
+        <p className='mt-4 text-gray-600 font-medium'>
+          Loading anonymization results...
+        </p>
+      </div>
+    );
 
   const { counts, config, data } = results;
 
-  // ---- Compute Metrics ----
-  const groupRows = (rows, selectedQIs) => {
-    const map = new Map();
-    for (const row of rows) {
-      const key = selectedQIs.map((q) => row[q] ?? 'Unknown').join('__');
-      if (!map.has(key)) map.set(key, []);
-      map.get(key).push(row);
-    }
-    return map;
-  };
+  // Use counts data from backend instead of recalculating
+  const {
+    avgClassSize,
+    equivalenceClasses,
+    infoLoss,
+    kAnonymity: backendKAnonymity,
+    privacyLevel,
+    released,
+    suppressed,
+    suppressionRate,
+    total
+  } = counts;
 
-  const eqGroups = groupRows(data, config.selectedQIs || []);
-  const recordsPreserved = data.length;
-  const avgClassSize =
-    eqGroups.size > 0 ? (recordsPreserved / eqGroups.size).toFixed(2) : 0;
-  const kAnonymityPassed =
-    Math.min(...Array.from(eqGroups.values()).map((g) => g.length)) >= config.k;
+  // Table columns (filter out sensitive fields)
+  const hiddenFields = ['id', 'patient_id'];
 
-  // Table columns
   const tableColumns =
     data && data.length > 0
-      ? Object.keys(data[0]).map((key) => ({
-          name: key,
-          selector: (row) => row[key],
-          sortable: true,
-        }))
+      ? Object.keys(data[0])
+          .filter((key) => !hiddenFields.includes(key)) // exclude sensitive keys
+          .map((key) => ({
+            name: key,
+            selector: (row) => row[key],
+            sortable: true,
+          }))
       : [];
 
-  // Equivalence class bar chart data
-  const eqClassData = Array.from(eqGroups.values()).map((g, idx) => ({
+  // Prepare equivalence class data for chart using backend data
+  const eqClassData = equivalenceClasses.map((size, idx) => ({
     name: `Class ${idx + 1}`,
-    size: g.length,
+    size: size,
   }));
 
   return (
     <div className='space-y-8 w-full'>
       {/* Cards */}
       <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6'>
-        <div className='bg-gradient-to-r from-blue-500 to-blue-400 text-white shadow-lg rounded-xl p-6 flex flex-col justify-between hover:scale-105 transition-transform'>
-          <span className='uppercase text-sm opacity-70'>Information Loss</span>
-          <span className='text-3xl font-bold mt-2'>
-            {(counts?.infoLoss * 100)?.toFixed(2) || 0}%
+        <div className='bg-white text-black shadow-lg rounded-xl p-3 flex flex-col justify-center items-center hover:scale-105 transition-transform'>
+          <span className='uppercase text-lg font-semibold opacity-70'>
+            Information Loss
+          </span>
+          <span className='text-3xl font-bold mt-2 text-[#21808D]'>
+            {(infoLoss * 100)?.toFixed(2)}%
           </span>
         </div>
-        <div className='bg-gradient-to-r from-red-500 to-red-400 text-white shadow-lg rounded-xl p-6 flex flex-col justify-between hover:scale-105 transition-transform'>
-          <span className='uppercase text-sm opacity-70'>Suppression Rate</span>
-          <span className='text-3xl font-bold mt-2'>
-            {(counts?.suppressionRate * 100)?.toFixed(2) || 0}%
+        <div className='bg-white text-black shadow-lg rounded-xl p-3 flex flex-col justify-center items-center hover:scale-105 transition-transform'>
+          <span className='uppercase text-lg font-semibold opacity-70'>
+            Suppression Rate
+          </span>
+          <span className='text-3xl font-bold mt-2 text-[#21808D]'>
+            {(suppressionRate * 100)?.toFixed(2)}%
           </span>
         </div>
-        <div className='bg-gradient-to-r from-green-500 to-green-400 text-white shadow-lg rounded-xl p-6 flex flex-col justify-between hover:scale-105 transition-transform'>
-          <span className='uppercase text-sm opacity-70'>
+        <div className='bg-white text-black shadow-lg rounded-xl p-3 flex flex-col justify-center items-center hover:scale-105 transition-transform'>
+          <span className='uppercase text-lg font-semibold opacity-70'>
             Equivalence Classes
           </span>
-          <span className='text-3xl font-bold mt-2'>{eqGroups.size || 0}</span>
-        </div>
-        <div className='bg-gradient-to-r from-purple-500 to-purple-400 text-white shadow-lg rounded-xl p-6 flex flex-col justify-between hover:scale-105 transition-transform'>
-          <span className='uppercase text-sm opacity-70'>
-            Records Preserved
+          <span className='text-3xl font-bold mt-2 text-[#21808D]'>
+            {equivalenceClasses.length}
           </span>
-          <span className='text-3xl font-bold mt-2'>{recordsPreserved}</span>
+        </div>
+        <div className='bg-white text-black shadow-lg rounded-xl p-3 flex flex-col justify-center items-center hover:scale-105 transition-transform'>
+          <span className='uppercase text-lg font-semibold opacity-70'>
+            Avg Class Size
+          </span>
+          <span className='text-3xl font-bold mt-2 text-[#21808D]'>
+            {avgClassSize?.toFixed(2)}
+          </span>
         </div>
       </div>
 
-      {/* Equivalence Class Distribution Chart */}
-      <div className='bg-white shadow-lg rounded-xl p-6'>
-        <h3 className='text-xl font-semibold mb-6'>
-          Equivalence Class Distribution
-        </h3>
-        <ResponsiveContainer width='100%' height={350}>
-          <BarChart data={eqClassData}>
-            <CartesianGrid strokeDasharray='3 3' />
-            <XAxis dataKey='name' />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey='size' fill='#3b82f6' radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      <div className='flex flex-col md:flex-row items-stretch justify-center gap-6 w-full'>
+        {/* Equivalence Class Distribution Chart */}
+        <div className='bg-white shadow-lg rounded-xl p-6 flex-1 flex flex-col'>
+          <h3 className='text-xl font-semibold mb-6 text-center md:text-left'>
+            Equivalence Class Distribution
+          </h3>
+          <ResponsiveContainer width='100%' height={350}>
+            <BarChart data={eqClassData}>
+              <CartesianGrid strokeDasharray='3 3' />
+              <XAxis dataKey='name' />
+              <YAxis />
+              <Tooltip 
+                formatter={(value) => [`Size: ${value}`, '']}
+                labelFormatter={(label) => `Equivalence Class ${label.split(' ')[1]}`}
+              />
+              <Bar dataKey='size' fill='#3b82f6' radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
 
-      {/* Privacy Analysis */}
-      <div className='bg-white shadow-lg rounded-xl p-6'>
-        <h3 className='text-xl font-semibold mb-6'>Privacy Analysis</h3>
-        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6'>
-          <div className='bg-gray-50 rounded-lg p-4 text-center shadow-sm hover:shadow-md transition'>
-            <span className='text-gray-500 text-sm'>K-Anonymity Status</span>
-            <div className='text-lg font-bold mt-2'>
-              {kAnonymityPassed ? 'Passed' : 'Failed'}
+        {/* Privacy Analysis */}
+        <div className='bg-white shadow-lg rounded-xl p-6 flex-1 flex flex-col'>
+          <h3 className='text-xl font-semibold mb-6 text-center md:text-left'>
+            Privacy Analysis
+          </h3>
+          <div className='space-y-4'>
+            <div className='bg-[#F4E5D8] flex items-center justify-between rounded-lg p-4 shadow-sm hover:shadow-md transition'>
+              <span className='text-gray-500 text-sm md:text-md font-semibold'>
+                K-Anonymity Status
+              </span>
+              <div className={`text-md font-bold ${backendKAnonymity ? 'text-green-600' : 'text-red-600'}`}>
+                {backendKAnonymity ? 'Passed' : 'Failed'}
+              </div>
+            </div>
+            <div className='bg-[#F4E5D8] flex items-center justify-between rounded-lg p-4 shadow-sm hover:shadow-md transition'>
+              <span className='text-gray-500 text-sm md:text-md font-semibold'>
+                Target K-Anonymity
+              </span>
+              <div className='text-md md:text-lg font-bold text-[#21808D]'>
+                {config.k}
+              </div>
+            </div>
+            <div className='bg-[#F4E5D8] flex items-center justify-between rounded-lg p-4 shadow-sm hover:shadow-md transition'>
+              <span className='text-gray-500 text-sm md:text-md font-semibold'>
+                Records Released
+              </span>
+              <div className='text-md md:text-lg font-bold text-[#21808D]'>
+                {released} / {total}
+              </div>
+            </div>
+            <div className='bg-[#F4E5D8] flex items-center justify-between rounded-lg p-4 shadow-sm hover:shadow-md transition'>
+              <span className='text-gray-500 text-sm md:text-md font-semibold'>
+                Records Suppressed
+              </span>
+              <div className='text-md md:text-lg font-bold text-[#21808D]'>
+                {suppressed}
+              </div>
+            </div>
+            <div className='bg-[#F4E5D8] flex items-center justify-between rounded-lg p-4 shadow-sm hover:shadow-md transition'>
+              <span className='text-gray-500 text-sm md:text-md font-semibold'>
+                Privacy Level
+              </span>
+              <div className='text-md md:text-lg font-bold text-[#21808D]'>
+                {(privacyLevel * 100)?.toFixed(2)}%
+              </div>
             </div>
           </div>
-          <div className='bg-gray-50 rounded-lg p-4 text-center shadow-sm hover:shadow-md transition'>
-            <span className='text-gray-500 text-sm'>Privacy Level</span>
-            <div className='text-lg font-bold mt-2'>{config.k}</div>
-          </div>
-          <div className='bg-gray-50 rounded-lg p-4 text-center shadow-sm hover:shadow-md transition'>
-            <span className='text-gray-500 text-sm'>Records Preserved</span>
-            <div className='text-lg font-bold mt-2'>{recordsPreserved}</div>
-          </div>
-          <div className='bg-gray-50 rounded-lg p-4 text-center shadow-sm hover:shadow-md transition'>
-            <span className='text-gray-500 text-sm'>Average Class Size</span>
-            <div className='text-lg font-bold mt-2'>{avgClassSize}</div>
-          </div>
+        </div>
+      </div>
+
+      {/* Additional Metrics Cards */}
+      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
+        <div className='bg-white text-black shadow-lg rounded-xl p-3 flex flex-col justify-center items-center hover:scale-105 transition-transform'>
+          <span className='uppercase text-lg font-semibold opacity-70'>
+            Total Records
+          </span>
+          <span className='text-3xl font-bold mt-2 text-[#21808D]'>
+            {total}
+          </span>
+        </div>
+        <div className='bg-white text-black shadow-lg rounded-xl p-3 flex flex-col justify-center items-center hover:scale-105 transition-transform'>
+          <span className='uppercase text-lg font-semibold opacity-70'>
+            Records Released
+          </span>
+          <span className='text-3xl font-bold mt-2 text-[#21808D]'>
+            {released}
+          </span>
+        </div>
+        <div className='bg-white text-black shadow-lg rounded-xl p-3 flex flex-col justify-center items-center hover:scale-105 transition-transform'>
+          <span className='uppercase text-lg font-semibold opacity-70'>
+            Records Suppressed
+          </span>
+          <span className='text-3xl font-bold mt-2 text-[#21808D]'>
+            {suppressed}
+          </span>
         </div>
       </div>
 
@@ -173,7 +238,7 @@ export const ResultsTab = ({ datasetId }) => {
           <h3 className='text-xl font-semibold'>Anonymized Data</h3>
           <button
             onClick={handleExport}
-            className='px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md transition'
+            className='px-4 py-2 bg-[#21808D] text-white rounded-lg shadow-md transition hover:bg-[#1a6a75]'
           >
             Export CSV
           </button>

@@ -4,31 +4,10 @@ const API = axios.create({
   baseURL: "http://localhost:3000/api",
 });
 
-//
-// --------------------- Patients APIs ---------------------
-//
+export const registerUser = (data) => API.post("/auth/register", data);
+export const loginUser = (data) => API.post("/auth/login", data);
 
-// 📌 Fetch all raw patients
-export const getPatients = () => API.get("/patients");
 
-// 📌 Add a new patient
-export const addPatient = (data) => API.post("/patients", data);
-
-// 📌 Update patient
-export const updatePatient = (id, data) =>
-  API.put(`/patients/${id}`, data);
-
-// 📌 Delete patient
-export const deletePatient = (id) =>
-  API.delete(`/patients/${id}`);
-
-// 📌 Fetch anonymized data (legacy patient anonymization)
-export const getAnonymized = (k, l) =>
-  API.get(`/patients/anonymized?k=${k}&l=${l}`);
-
-//
-// --------------------- Datasets APIs ---------------------
-//
 
 // 📌 Upload dataset (CSV file)
 export const uploadDataset = async (file) => {
@@ -53,7 +32,10 @@ export const getResults = async (datasetId) => {
   return res; // { datasetId, name, counts, data, config }
 };
 
-// 📌 Export anonymized dataset as CSV (download)
-export const exportResults = (datasetId) => {
-  window.open(`${API.defaults.baseURL}/datasets/${datasetId}/export`, "_blank");
-};
+
+
+// Export anonymized results (CSV)
+export const exportResults = (datasetId) =>
+  API.get(`/datasets/${datasetId}/export`, {
+    responseType: "blob", // <-- Important!
+  });

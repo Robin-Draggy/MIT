@@ -19,17 +19,17 @@ export const AnnonymizationResults = () => {
     <div className="w-full px-4 py-6">
       <Tab.Group selectedIndex={selectedIndex} onChange={setSelectedIndex}>
         {/* Tabs */}
-        <Tab.List className="flex space-x-1 rounded-xl bg-gray-200 p-1">
+        <Tab.List className="flex space-x-1 rounded-xl bg-white p-2">
           {["Overview", "Data Upload", "Configure", "Results"].map((tab) => (
             <Tab
               key={tab}
               className={({ selected }) =>
                 `w-full rounded-lg py-2.5 text-sm font-medium leading-5 
                  focus:outline-none focus:ring-2 ring-offset-2 
-                 ring-offset-gray-200 ring-white ring-opacity-60 ${
+                 ring-offset-gray-200 ring-white ring-opacity-60 cursor-pointer ${
                    selected
-                     ? "bg-white shadow text-blue-600"
-                     : "text-gray-600 hover:bg-white/[0.5] hover:text-blue-600"
+                     ? "bg-[#21808D] shadow text-white"
+                     : "text-gray-600 hover:bg-[#21808D] hover:text-white"
                  }`
               }
             >
